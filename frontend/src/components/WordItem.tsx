@@ -1,8 +1,9 @@
 import React from "react";
 import { useNavigate } from "react-router-dom";
 import { Word } from "../types/word";
+import api from "../api/axiosConfig";
 
-interface WordItemProps extends Word {}
+type WordItemProps = Word;
 
 const WordItem: React.FC<WordItemProps> = ({
   id,
@@ -12,6 +13,17 @@ const WordItem: React.FC<WordItemProps> = ({
   sentenceSecondLang,
 }) => {
   const navigate = useNavigate();
+
+  const handleDelete = async () => {
+    if (window.confirm("Are you sure you want to delete this word?")) {
+      try {
+        await api.delete(`words/${id}/`);
+        window.location.reload();
+      } catch (err) {
+        alert(`Failed to delete the word.${err}`);
+      }
+    }
+  };
 
   return (
     <div className="flex flex-col p-4 border rounded-md shadow-sm bg-white h-full">
@@ -35,12 +47,22 @@ const WordItem: React.FC<WordItemProps> = ({
           </p>
         )}
       </div>
-      <button
-        onClick={() => navigate(`/edit/${id}`)}
-        className="mt-4 w-36 py-2 bg-blue-500 text-white rounded-md hover:bg-blue-600 text-center"
-      >
-        Edit
-      </button>
+
+      <div className="flex justify-start mt-4 space-x-2">
+        <button
+          onClick={() => navigate(`/edit/${id}`)}
+          className="py-1 bg-blue-500 w-24 text-white rounded-md hover:bg-blue-600 text-center"
+        >
+          Edit
+        </button>
+
+        <button
+          onClick={handleDelete}
+          className="py-1 bg-red-500 w-24 text-white rounded-md hover:bg-red-600 text-center"
+        >
+          Delete
+        </button>
+      </div>
     </div>
   );
 };

@@ -1,4 +1,4 @@
-import React, { useEffect, useState, useRef } from "react";
+import React, { useEffect, useState, useCallback } from "react";
 import api from "../api/axiosConfig";
 import { useNavigate } from "react-router-dom";
 import { WordItem, SearchBar, Pagination } from ".";
@@ -8,47 +8,39 @@ import { debounce } from "lodash";
 const WordList: React.FC = () => {
   const navigate = useNavigate();
   const [words, setWords] = useState<Word[]>([]);
-  const [loading, setLoading] = useState<boolean>(true);
+  const [loading, setLoading] = useState<boolean>(false);
   const [error, setError] = useState<string>("");
   const [searchQuery, setSearchQuery] = useState<string>("");
   const [currentPage, setCurrentPage] = useState<number>(1);
   const [totalPages, setTotalPages] = useState<number>(1);
   const [pageSize, setPageSize] = useState<number>(10);
 
-  // Debounce search to reduce API calls during typing
-  const debouncedSearch = useRef(
+  // Optimized debounced search using useCallback
+  const debouncedSearch = useCallback(
     debounce((query: string, page: number, size: number) => {
-      setLoading(true);
       api
         .get(`words/?search=${query}&page=${page}&page_size=${size}`)
         .then((response) => {
           setWords(response.data.results);
           setTotalPages(Math.ceil(response.data.total_items / size));
-          setLoading(false);
         })
-        .catch(() => {
-          setError("Failed to load words.");
-          setLoading(false);
-        });
-    }, 800)
-  ).current;
+        .catch(() => setError("Failed to load words."))
+        .finally(() => setLoading(false));
+    }, 300),
+    []
+  );
 
-  // Fetch words when searchQuery, page, or pageSize changes
   useEffect(() => {
+    setLoading(true);
     debouncedSearch(searchQuery, currentPage, pageSize);
-  }, [searchQuery, currentPage, pageSize]);
+  }, [searchQuery, currentPage, pageSize, debouncedSearch]);
 
-  // Handle page size change
   const handlePageSizeChange = (size: number) => {
     setPageSize(size);
     setCurrentPage(1);
   };
 
-  return loading ? (
-    <p>Loading words...</p>
-  ) : error ? (
-    <p>{error}</p>
-  ) : (
+  return (
     <div className="space-y-4">
       <div className="flex flex-col md:flex-row md:items-center md:justify-between space-y-2 md:space-y-0 md:space-x-4">
         <button
@@ -57,24 +49,16 @@ const WordList: React.FC = () => {
         >
           ➕ Add New Word
         </button>
-
         <SearchBar searchQuery={searchQuery} setSearchQuery={setSearchQuery} />
       </div>
 
-      {words.length ? (
+      {loading ? (
+        <p>Loading words...</p>
+      ) : error ? (
+        <p>{error}</p>
+      ) : words.length ? (
         <>
-          <div className="grid grid-cols-1 md:grid-cols-2 gap-4">
-            {words.map((word) => (
-              <WordItem
-                key={word.id}
-                id={word.id}
-                wordFirstLang={word.wordFirstLang}
-                wordSecondLang={word.wordSecondLang}
-                sentenceFirstLang={word.sentenceFirstLang}
-                sentenceSecondLang={word.sentenceSecondLang}
-              />
-            ))}
-          </div>
+          <MemoizedWordGrid words={words} />
           <Pagination
             currentPage={currentPage}
             totalPages={totalPages}
@@ -91,3 +75,20 @@ const WordList: React.FC = () => {
 };
 
 export default WordList;
+
+const MemoizedWordGrid: React.FC<{ words: Word[] }> = React.memo(
+  ({ words }) => (
+    <div className="grid grid-cols-1 md:grid-cols-2 gap-4">
+      {words.map((word) => (
+        <WordItem
+          key={word.id}
+          id={word.id}
+          wordFirstLang={word.wordFirstLang}
+          wordSecondLang={word.wordSecondLang}
+          sentenceFirstLang={word.sentenceFirstLang}
+          sentenceSecondLang={word.sentenceSecondLang}
+        />
+      ))}
+    </div>
+  )
+);

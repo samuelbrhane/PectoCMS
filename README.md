@@ -83,7 +83,7 @@ python manage.py migrate
 python manage.py load_data
 ```
 
-> **Note:** Running `python manage.py load_data` only needs to be done **once after migrations**. You do **not** need to run `makemigrations` or `migrate` again unless you change the models.
+> **Note:** Running `python manage.py load_data` only needs to be done **once after migrations**.
 
 6. Run the Django server:
 
@@ -157,7 +157,7 @@ npm run dev
 
 ---
 
-## 🛠️ **Tech Stack**
+## **Tech Stack**
 
 - **Backend:** Django REST Framework (DRF), SQLite
 - **Frontend:** React, Vite, TypeScript, Tailwind CSS
